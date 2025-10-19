@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+
+{% block title %}Админка - Giocatory Shop{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="admin-panel">
+        <h1>Панель администратора</h1>
+        
+        <div class="admin-tabs">
+            <button class="tab-btn active" onclick="openTab('add-product')">Добавить товар</button>
+            <button class="tab-btn" onclick="openTab('manage-products')">Управление товарами</button>
+            <button class="tab-btn" onclick="openTab('manage-categories')">Управление категориями</button>
+        </div>
+        
+        <!-- Вкладка добавления товара -->
+        <div id="add-product" class="tab-content active">
+            <form id="admin-form" class="admin-form">
+                <div class="form-group">
+                    <label for="name">Название товара:</label>
+                    <input type="text" id="name" name="name" required class="form-input">
+                </div>
+                
+                <div class="form-group">
+                    <label for="description">Описание:</label>
+                    <textarea id="description" name="description" class="form-textarea" rows="4"></textarea>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="price">Цена:</label>
+                        <input type="number" id="price" name="price" step="0.01" required class="form-input">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="category_id">Категория:</label>
+                        <select id="category_id" name="category_id" class="form-select">
+                            <option value="">Без категории</option>
+                            {% for category in categories %}
+                            <option value="{{ category.id }}">{{ category.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="image_url">URL изображения:</label>
+                    <input type="url" id="image_url" name="image_url" class="form-input" 
+                           placeholder="https://example.com/image.jpg">
+                </div>
+                
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="in_stock" name="in_stock" checked>
+                        <span class="checkmark"></span>
+                        В наличии
+                    </label>
+                </div>
+                
+                <button type="submit" class="btn btn-success btn-large">Добавить товар</button>
+            </form>
+        </div>
+        
+        <!-- Вкладка управления товарами -->
+        <div id="manage-products" class="tab-content">
+            <div id="products-list" class="products-list">
+                <!-- Список товаров будет загружен через JavaScript -->
+            </div>
+        </div>
+        
+        <!-- Вкладка управления категориями -->
+        <div id="manage-categories" class="tab-content">
+            <div class="categories-management">
+                <div class="add-category-form">
+                    <h3>Добавить новую категорию</h3>
+                    <form id="category-form" class="admin-form">
+                        <div class="form-group">
+                            <label for="category_name">Название категории:</label>
+                            <input type="text" id="category_name" name="name" required class="form-input">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="category_description">Описание категории:</label>
+                            <textarea id="category_description" name="description" class="form-textarea" rows="3"></textarea>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-success">Добавить категорию</button>
+                    </form>
+                </div>
+                
+                <div class="categories-list-admin">
+                    <h3>Существующие категории</h3>
+                    <div id="categories-list" class="categories-items">
+                        <!-- Список категорий будет загружен через JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Функции для работы с вкладками
+function openTab(tabName) {
+    const tabContents = document.getElementsByClassName('tab-content');
+    const tabBtns = document.getElementsByClassName('tab-btn');
+    
+    for (let tab of tabContents) {
+        tab.classList.remove('active');
+    }
+    for (let btn of tabBtns) {
+        btn.classList.remove('active');
+    }
+    
+    document.getElementById(tabName).classList.add('active');
+    event.currentTarget.classList.add('active');
+    
+    if (tabName === 'manage-products') {
+        loadProductsForAdmin();
+    } else if (tabName === 'manage-categories') {
+        loadCategoriesForAdmin();
+    }
+}
+
+// Загрузка категорий для админки
+async function loadCategoriesForAdmin() {
+    try {
+        const response = await fetch('/api/v1/categories/');
+        const categories = await response.json();
+        
+        const categoriesList = document.getElementById('categories-list');
+        categoriesList.innerHTML = categories.map(category => `
+            <div class="category-item-admin">
+                <div class="category-info">
+                    <h4>${category.name}</h4>
+                    <p>${category.description || 'Описание отсутствует'}</p>
+                    <small>Создана: ${new Date(category.created_at).toLocaleDateString()}</small>
+                </div>
+                <div class="category-actions">
+                    <button class="btn btn-secondary" onclick="editCategory(${category.id})">Редактировать</button>
+                    <button class="btn btn-danger" onclick="deleteCategory(${category.id})">Удалить</button>
+                </div>
+            </div>
+        `).join('');
+    } catch (error) {
+        console.error('Error loading categories:', error);
+    }
+}
+
+// Добавление категории
+document.getElementById('category-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(e.target);
+    const categoryData = {
+        name: formData.get('name'),
+        description: formData.get('description')
+    };
+    
+    try {
+        const response = await fetch('/api/v1/categories/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(categoryData)
+        });
+        
+        if (response.ok) {
+            alert('Категория успешно добавлена!');
+            e.target.reset();
+            loadCategoriesForAdmin();
+        } else {
+            const error = await response.json();
+            alert('Ошибка при добавлении категории: ' + error.detail);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Ошибка при добавлении категории');
+    }
+});
+
+// Удаление категории
+async function deleteCategory(categoryId) {
+    if (!confirm('Вы уверены, что хотите удалить эту категорию?')) return;
+    
+    try {
+        const response = await fetch(`/api/v1/categories/${categoryId}`, {
+            method: 'DELETE'
+        });
+        
+        if (response.ok) {
+            alert('Категория успешно удалена!');
+            loadCategoriesForAdmin();
+        } else {
+            const error = await response.json();
+            alert('Ошибка при удалении категории: ' + error.detail);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Ошибка при удалении категории');
+    }
+}
+
+// Редактирование категории
+async function editCategory(categoryId) {
+    const newName = prompt('Введите новое название категории:');
+    const newDescription = prompt('Введите новое описание категории:');
+    
+    if (newName) {
+        try {
+            const response = await fetch(`/api/v1/categories/${categoryId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    name: newName,
+                    description: newDescription
+                })
+            });
+            
+            if (response.ok) {
+                alert('Категория успешно обновлена!');
+                loadCategoriesForAdmin();
+            } else {
+                const error = await response.json();
+                alert('Ошибка при обновлении категории: ' + error.detail);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Ошибка при обновлении категории');
+        }
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}{{ product.name }} - Giocatory Shop{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="product-detail">
+        <div class="product-gallery">
+            {% if product.image_url %}
+            <img src="{{ product.image_url }}" 
+                 alt="{{ product.name }}" 
+                 class="product-main-image"
+                 onerror="this.style.display='none'">
+            {% else %}
+            <div class="no-image-placeholder-large">
+                <span>📷</span>
+                <p>No Image Available</p>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="product-info">
+            <h1 class="product-title">{{ product.name }}</h1>
+            <div class="product-price">{{ "%.2f"|format(product.price) }} ₽</div>
+            
+            {% if product.category %}
+            <div class="product-category">
+                Категория: <span class="category-tag">{{ product.category.name }}</span>
+            </div>
+            {% endif %}
+            
+            <div class="product-description-full">
+                <h3>Описание</h3>
+                <p>{{ product.description or 'Описание отсутствует' }}</p>
+            </div>
+            
+            <div class="product-meta-info">
+                <div class="stock-status {% if product.in_stock %}in-stock{% else %}out-of-stock{% endif %}">
+                    {{ '✅ В наличии' if product.in_stock else '❌ Нет в наличии' }}
+                </div>
+                <div class="product-id">
+                    ID товара: {{ product.id }}
+                </div>
+            </div>
+            
+            <div class="product-actions">
+                {% if product.in_stock %}
+                <button class="btn btn-primary btn-large" onclick="addToCart({{ product.id }})">
+                    Добавить в корзину
+                </button>
+                {% else %}
+                <div class="out-of-stock-large">Товар временно отсутствует</div>
+                {% endif %}
+                <a href="/" class="btn btn-secondary">Вернуться к каталогу</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

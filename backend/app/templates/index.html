@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block title %}Главная - Giocatory Shop{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="hero-section">
+        <h1>Добро пожаловать в Giocatory Shop</h1>
+        <p>Лучшие товары по отличным ценам</p>
+    </div>
+
+    <div class="main-layout">
+        <div class="products-section">
+            <div class="filters">
+                <select id="category-filter" class="category-filter" onchange="filterByCategory(this.value)">
+                    <option value="">Все категории</option>
+                    {% for stat in categories_stats %}
+                    <option value="{{ stat.category_id }}" 
+                            {% if current_category_id == stat.category_id|string %}selected{% endif %}>
+                        {{ stat.category_name }} ({{ stat.product_count }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div id="products-grid" class="products-grid">
+                {% for product in products %}
+                <div class="product-card">
+                    {% if product.image_url %}
+                    <img src="{{ product.image_url }}" 
+                         alt="{{ product.name }}" 
+                         class="product-image"
+                         onerror="this.style.display='none'">
+                    {% else %}
+                    <div class="no-image-placeholder">
+                        <span>🖼️</span>
+                        <p>No Image</p>
+                    </div>
+                    {% endif %}
+                    <div class="product-info">
+                        <h3 class="product-name">{{ product.name }}</h3>
+                        <p class="product-description">{{ product.description[:100] }}{% if product.description and product.description|length > 100 %}...{% endif %}</p>
+                        <div class="product-meta">
+                            <div class="product-price">{{ "%.2f"|format(product.price) }} ₽</div>
+                            {% if product.category %}
+                            <div class="product-category-badge">{{ product.category.name }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="product-actions">
+                            <a href="/product/{{ product.id }}" class="btn btn-primary">Подробнее</a>
+                            <button class="btn btn-secondary" onclick="addToCart({{ product.id }})">В корзину</button>
+                        </div>
+                        {% if not product.in_stock %}
+                        <div class="out-of-stock">Нет в наличии</div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% else %}
+                <div class="no-products">
+                    <p>Товары не найдены</p>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Пагинация -->
+            {% if pagination.pages > 1 %}
+            <div class="pagination">
+                {% if pagination.has_prev %}
+                <a href="/?page={{ pagination.page - 1 }}{% if current_category_id %}&category_id={{ current_category_id }}{% endif %}" class="page-link">← Назад</a>
+                {% endif %}
+                
+                {% for page_num in range(1, pagination.pages + 1) %}
+                <a href="/?page={{ page_num }}{% if current_category_id %}&category_id={{ current_category_id }}{% endif %}" 
+                   class="page-link {% if page_num == pagination.page %}active{% endif %}">
+                    {{ page_num }}
+                </a>
+                {% endfor %}
+                
+                {% if pagination.has_next %}
+                <a href="/?page={{ pagination.page + 1 }}{% if current_category_id %}&category_id={{ current_category_id }}{% endif %}" class="page-link">Вперед →</a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Блок категорий -->
+        <div class="categories-sidebar">
+            <div class="categories-card">
+                <h3 class="categories-title">📊 Статистика по категориям</h3>
+                <div class="categories-list">
+                    {% for stat in categories_stats %}
+                    <div class="category-item">
+                        <span class="category-name">{{ stat.category_name }}</span>
+                        <span class="category-count">{{ stat.product_count }} товаров</span>
+                    </div>
+                    {% else %}
+                    <div class="no-categories">Категории пока не добавлены</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function filterByCategory(categoryId) {
+    if (categoryId) {
+        window.location.href = `/?category_id=${categoryId}`;
+    } else {
+        window.location.href = '/';
+    }
+}
+</script>
+{% endblock %}
