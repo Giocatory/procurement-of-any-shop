@@ -26,7 +26,7 @@ app.include_router(products.router, prefix="/api/v1")
 app.include_router(admin.router, prefix="/api/v1")
 app.include_router(categories.router, prefix="/api/v1")
 
-# Получаем абсолютные пути - ИСПРАВЛЕНО
+# Получаем абсолютные пути
 current_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(os.path.dirname(current_dir))  # backend/app -> backend -> project_root
 static_dir = os.path.join(project_root, "static")
